@@ -1,34 +1,49 @@
 services:
   api:
-    build:
-      context: ../cod-platform-api
-      dockerfile: Dockerfile
-      target: build
-    command: npm run start:dev -- --watch
+    image: node:22-alpine
+    user: root
+    working_dir: /app
+    command: sh -c "npm install && npx prisma generate && npm run start:dev -- --watch"
     volumes:
-      - ../cod-platform-api/src:/app/src
-      - ../cod-platform-api/prisma:/app/prisma
+      - ../cod-platform-api:/app
     ports:
       - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cod_user}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-cod_platform}
+      REDIS_URL: redis://redis:6379
+      AUTH_ADAPTER: ${AUTH_ADAPTER:-mock}
+      MOCK_STORE_ID: ${MOCK_STORE_ID:-00000000-0000-0000-0000-000000000001}
+      MOCK_USER_ID: ${MOCK_USER_ID:-00000000-0000-0000-0000-000000000002}
+      NODE_ENV: ${NODE_ENV:-development}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   web:
-    build:
-      context: ../cod-platform-web
-      dockerfile: Dockerfile
-      target: build
-    command: npm run dev -- -H 0.0.0.0 -p 3001
+    image: node:22-alpine
+    user: root
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- -H 0.0.0.0 -p 3001"
     volumes:
-      - ../cod-platform-web/src:/app/src
+      - ../cod-platform-web:/app
     ports:
       - "3001:3001"
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:3000
+    depends_on:
+      api:
+        condition: service_started
 
   ai:
-    build:
-      context: ../cod-platform-ai
-      dockerfile: Dockerfile
-      target: builder
-    command: uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
+    image: python:3.13-slim
+    working_dir: /app
+    command: sh -c "pip install uv && uv sync && uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
-      - ../cod-platform-ai/src:/app/src
+      - ../cod-platform-ai:/app
     ports:
       - "8000:8000"
+    depends_on:
+      api:
+        condition: service_started

@@ -27,6 +27,8 @@ services:
     build:
       context: ../cod-platform-api
       dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-cod_user}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-cod_platform}
       REDIS_URL: redis://redis:6379
@@ -49,6 +51,8 @@ services:
     build:
       context: ../cod-platform-web
       dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
     environment:
       NEXT_PUBLIC_API_URL: http://api:3000
     depends_on:
@@ -64,6 +68,8 @@ services:
     build:
       context: ../cod-platform-ai
       dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
     depends_on:
       api:
         condition: service_healthy
