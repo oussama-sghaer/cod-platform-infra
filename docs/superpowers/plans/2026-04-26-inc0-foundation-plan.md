@@ -1715,3 +1715,17 @@ git commit -m "docs: mark increment 0 complete"
 | Test list (4 e2e + 1 manual) | Tasks 7, 9, 11, 12, 20 |
 
 Every spec requirement has a task. No placeholders. Type names (`AuthPort`, `AuthContext`, `MockAuthAdapter`, `JwtAuthAdapter`, `AuthGuard`, `IS_PUBLIC_KEY`, `AUTH_PORT`, `Public`, `CurrentContext`) are consistent across tasks.
+
+---
+
+## ✅ Increment 0 Complete
+
+All tasks 1–20 done and verified by smoke test on 2026-04-27.
+
+Smoke test results:
+- `GET /health` → `{"status":"ok","service":"cod-platform-api","version":"0.0.0","timestamp":"..."}`
+- `GET /me` with `x-mock-store-id` → `{"userId":"...","storeId":"...","role":"OWNER"}`
+- `GET /` (web) → HTTP 200
+- `GET /health` (AI) → `{"status":"ok","service":"cod-platform-ai","version":"0.0.1","timestamp":"..."}`
+
+Next: write the Increment 1 spec (Financial Engine Core) in `Repos/cod-platform-api/docs/superpowers/specs/`.
