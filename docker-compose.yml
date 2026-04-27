@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cod_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-cod_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cod_user}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ../cod-platform-api
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cod_user}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-cod_platform}
+      REDIS_URL: redis://redis:6379
+      AUTH_ADAPTER: ${AUTH_ADAPTER:-mock}
+      MOCK_STORE_ID: ${MOCK_STORE_ID:-00000000-0000-0000-0000-000000000001}
+      MOCK_USER_ID: ${MOCK_USER_ID:-00000000-0000-0000-0000-000000000002}
+      NODE_ENV: ${NODE_ENV:-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  web:
+    build:
+      context: ../cod-platform-web
+      dockerfile: Dockerfile
+    environment:
+      NEXT_PUBLIC_API_URL: http://api:3000
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  ai:
+    build:
+      context: ../cod-platform-ai
+      dockerfile: Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:

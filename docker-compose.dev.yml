@@ -1,0 +1,34 @@
+services:
+  api:
+    build:
+      context: ../cod-platform-api
+      dockerfile: Dockerfile
+      target: build
+    command: npm run start:dev -- --watch
+    volumes:
+      - ../cod-platform-api/src:/app/src
+      - ../cod-platform-api/prisma:/app/prisma
+    ports:
+      - "3000:3000"
+
+  web:
+    build:
+      context: ../cod-platform-web
+      dockerfile: Dockerfile
+      target: build
+    command: npm run dev -- -H 0.0.0.0 -p 3001
+    volumes:
+      - ../cod-platform-web/src:/app/src
+    ports:
+      - "3001:3001"
+
+  ai:
+    build:
+      context: ../cod-platform-ai
+      dockerfile: Dockerfile
+      target: builder
+    command: uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ../cod-platform-ai/src:/app/src
+    ports:
+      - "8000:8000"
