@@ -1,15 +1,19 @@
 services:
   api:
-    image: node:22-alpine
-    user: root
+    build:
+      context: ../cod-platform-api
+      target: deps
     working_dir: /app
-    command: sh -c "npm install && npx prisma generate && npm run start:dev -- --watch"
+    command: sh -c "npx prisma generate && npm run start:dev"
     volumes:
-      - ../cod-platform-api:/app
+      - ../cod-platform-api/src:/app/src
+      - ../cod-platform-api/prisma:/app/prisma
+      - ../cod-platform-api/tsconfig.json:/app/tsconfig.json
+      - ../cod-platform-api/nest-cli.json:/app/nest-cli.json
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-cod_user}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-cod_platform}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cod_platform}
       REDIS_URL: redis://redis:6379
       AUTH_ADAPTER: ${AUTH_ADAPTER:-mock}
       MOCK_STORE_ID: ${MOCK_STORE_ID:-00000000-0000-0000-0000-000000000001}
@@ -22,24 +26,26 @@ services:
         condition: service_healthy
 
   web:
-    image: node:22-alpine
-    user: root
+    build:
+      context: ../cod-platform-web
+      target: deps
     working_dir: /app
-    command: sh -c "npm install && npm run dev -- -H 0.0.0.0 -p 3001"
+    command: npm run dev -- -H 0.0.0.0 -p 3001
     volumes:
-      - ../cod-platform-web:/app
+      - ../cod-platform-web/src:/app/src
+      - ../cod-platform-web/public:/app/public
     ports:
       - "3001:3001"
     environment:
-      NEXT_PUBLIC_API_URL: http://api:3000
+      NEXT_PUBLIC_API_URL: http://localhost:3000
     depends_on:
       api:
         condition: service_started
 
   ai:
-    image: python:3.13-slim
+    image: python:3.12-slim
     working_dir: /app
-    command: sh -c "pip install uv && uv sync && uv run uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload"
+    command: sh -c "pip install uv && uv sync && uv run uvicorn cod_platform_ai.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
       - ../cod-platform-ai:/app
     ports:
