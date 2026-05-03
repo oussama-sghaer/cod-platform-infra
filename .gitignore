@@ -13,3 +13,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Claude / planning docs
+CLAUDE.md
+AGENTS.md
+docs/
